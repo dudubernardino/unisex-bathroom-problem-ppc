@@ -41,7 +41,7 @@ class Bathroom(threading.Thread):
         for i in range(P):
             
             random.seed()
-            t = random.randint(1,7)
+            t = random.randint(2,6)
             myThread = Person(threadID)
             threadList.append(myThread)
             myThread.start()
@@ -222,7 +222,7 @@ def init():
     N = 0
     print("#######################")
     print("1 - 1 box e 60 pessoas")
-    print("2 - 3 boxes e 150 pessoas")
+    print("2 - 3 boxes e 180 pessoas")
     print("3 - 5 boxes e 300 pessoas")
     op = int(input("opção: "))
     while (op != 1 and op != 2 and op != 3):
@@ -234,7 +234,7 @@ def init():
         P = 60
     elif op == 2:
         N = 3
-        P = 150 
+        P = 180 
     elif op == 3: 
         N = 5 
         P = 300
