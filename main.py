@@ -19,13 +19,13 @@ mutexGender = threading.Semaphore()     #mutex para acesso a variável genRestro
 
 class Bathroom(threading.Thread):
     
-    def __init__(self, N):
+    def __init__(self, boxes):
         threading.Thread.__init__(self)
-        self.N = N
-        self.maxB = N
-        self.ocupTime = 0
+        self.boxes = N
+        self.maxBoxes = N
+        self.ocupationTime = 0
         self.semaphore = threading.Semaphore(N)
-        self.genRestroom = -1
+        self.genderBathroom = -1
         self.tempoExec = 0
     
     def run(self):
@@ -225,6 +225,7 @@ def init():
     print("2 - 3 boxes e 180 pessoas")
     print("3 - 5 boxes e 300 pessoas")
     op = int(input("opção: "))
+    print("#######################")
     while (op != 1 and op != 2 and op != 3):
        print("Invalido!")
        op = input("opção: ")
