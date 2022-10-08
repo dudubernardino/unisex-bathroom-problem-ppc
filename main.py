@@ -83,7 +83,7 @@ class Person(threading.Thread):
             elif bathroom.N > 0 and bathroom.genRestroom == self.gender and waitQueue[self.gender].index(self) < bathroom.N:
                 return True
         
-    def enterRestroom(self):
+    def enterBathroom(self):
         global bathroom, waitQueue, mutexGender
 
         if bathroom.genRestroom == -1:
@@ -144,7 +144,7 @@ class Person(threading.Thread):
 
         bathroom.N += 1
        
-        self.leaveRestroom()
+        self.releaseStall()
 
     def genderTurn(self): 
         global waitQueue
@@ -198,7 +198,7 @@ class Person(threading.Thread):
 
             return times.index(min(times))
 
-    def leaveRestroom(self):
+    def releaseStall(self):
 
         global bathroom, waitQueue, mutexGender
         
@@ -215,7 +215,7 @@ class Person(threading.Thread):
         
         print("[CHEGADA] Pessoa{} - Gênero {} chegou no banheiro.".format(self.threadID, self.gender))
         self.waitTime = time.time()
-        self.enterRestroom()
+        self.enterBathroom()
 
 def init():
     global bathroom, P
