@@ -1,152 +1,98 @@
-# References: 
-#   - http://marcial.larces.uece.br/cursos/programacao-concorrente-e-paralela-2019-1/       problema-do-banheiro-unisex
-#   - https://github.com/Adrilene/unisexBathroom_PPC
-
-#!usr/bin/python3
 import threading
 import time
 import random
 
-#Variáveis Globais
-waitQueue = [[], [], []]    #fila de espera
-counterGen = [0,0,0]    #contador para cada gênero
-counterWait = [0,0,0]   #contador para o tempo de espera de cada gênero
 bathroom = None
-P = 0
+persons = 0
+counterGender = [0,0,0]    # Contador para cada gênero
+genders = ['M','F','Q']    # Gêneros
+waitQueue = [[], [], []]   # Fila de espera
+counterWaitTime = [0,0,0]  # Contador para o tempo de espera de cada gênero
 
-#variáveis para sincronizaçãp
-mutexGender = threading.Semaphore()     #mutex para acesso a variável genRestroom
 
-class Bathroom(threading.Thread):
-    
-    def __init__(self, boxes):
-        threading.Thread.__init__(self)
-        self.boxes = N
-        self.maxBoxes = N
-        self.ocupationTime = 0
-        self.semaphore = threading.Semaphore(N)
-        self.genderBathroom = -1
-        self.tempoExec = 0
-    
-    def run(self):
-        global P
-        
-        self.tempoExec = time.time()
-        
-        threadID = 1
-        threadList = []
-
-        print("{} boxes e {} Pessoas".format(self.N, P))
-
-        for i in range(P):
-            
-            random.seed()
-            t = random.randint(2,6)
-            myThread = Person(threadID)
-            threadList.append(myThread)
-            myThread.start()
-            time.sleep(t)
-            threadID += 1
-            
-        for t in threadList:
-            t.join()
-
-        self.tempoExec = time.time() - self.tempoExec
-
+# Variável para sincronização
+mutexGender = threading.Semaphore()  # Mutex para acesso a variável genderBathroom
 
 class Person(threading.Thread):
-
-    def __init__(self, threadID):
+    def __init__(self, personId):
         threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.gender = self.genGender()
+        self.personId = personId
+        self.gender = self.generateGender()
         self.waitTime = 0
 
-    def genGender(self):
+    def generateGender(self):
         random.seed()
         gender = random.randint(0,2)
-        while(counterGen[gender] >= P/3):
+        while(counterGender[gender] >= persons/3):
             gender = random.randint(0,2)
-        counterGen[gender]+=1
+        counterGender[gender] += 1
         return gender
-
-    def tests(self):
-        global bathroom, waitQueue, mutexGender
-            
-        if bathroom.N > 0 and bathroom.genRestroom == self.gender:
-            return True
-
-        if len(waitQueue[self.gender]) > 0: 
-            if self not in waitQueue[self.gender]:
-                waitQueue[self.gender].append(self)
-                return False
-            elif bathroom.N > 0 and bathroom.genRestroom == self.gender and waitQueue[self.gender].index(self) < bathroom.N:
-                return True
-        
+    
     def enterBathroom(self):
         global bathroom, waitQueue, mutexGender
 
-        if bathroom.genRestroom == -1:
+        if bathroom.genderBathroom == -1:
             mutexGender.acquire()
-            bathroom.genRestroom = self.gender
+            bathroom.genderBathroom = self.gender
             mutexGender.release()
-            print("Banheiro Livre. Gênero do banheiro: {}.".format(bathroom.genRestroom))
+            print("🚻 Banheiro Livre.")
 
-        if bathroom.genRestroom != self.gender:
+        if bathroom.genderBathroom != self.gender:
             waitQueue[self.gender].append(self)
             
-            print("[FILA] Pessoa{} - Gênero: {} entrou na fila.".format(self.threadID, self.gender))
+            print("FILA ⌛: Pessoa {} - Gênero: {} entrou na fila.".format(self.personId, genders[self.gender]))
 
-            print("Fila Gênero {}: [".format(self.gender),end="")
-            for i in range(len(waitQueue[self.gender])):
-                print("{} ".format(waitQueue[self.gender][i].threadID), end="")
-            print("]")
+            self.printQueue()
                 
-        if bathroom.N == 0:
+        if bathroom.boxes == 0:
             if self not in waitQueue[self.gender]:
                 waitQueue[self.gender].append(self)
-                print("[FILA] Pessoa {} - Gênero: {} entrou na fila.".format(self.threadID, self.gender))
-
-                print("Fila Gênero {}: [".format(self.gender),end="")
-                for i in range(len(waitQueue[self.gender])):
-                    print("{} ".format(waitQueue[self.gender][i].threadID), end="")
-                print("]")
+                print("FILA ⌛: Pessoa {} - Gênero: {} entrou na fila.".format(self.personId, genders[self.gender]))
+                
+                self.printQueue()
         
         with bathroom.semaphore:
-            while(not self.tests()):
-                time.sleep(random.random())
-    
             self.getStall() 
-            
+
     def getStall(self):
-    
-        global bathroom, waitQueue, counterWait
+        global bathroom, waitQueue, counterWaitTime
         
-        counterWait[self.gender] += time.time() - self.waitTime
+        counterWaitTime[self.gender] += time.time() - self.waitTime
+
         try:
             waitQueue[self.gender].remove(self)
         except(ValueError):
             pass
 
-        bathroom.N -= 1 
+        bathroom.boxes -= 1 
         
-        print("[ENTRADA] Pessoa {} - Gênero {} entrando no box. --- {} boxes livres.".format(self.threadID, self.gender, bathroom.N))
+        print("ENTRADA 🚽: Pessoa {} - Gênero {} entrando no box. {} boxes livres.".format(self.personId, genders[self.gender], bathroom.boxes))
         
         if len(waitQueue[self.gender]) > 0:
-            print("Fila Gênero {}: [".format(self.gender),end="")
-            for i in range(len(waitQueue[self.gender])):
-                print("{} ".format(waitQueue[self.gender][i].threadID), end="")
-            print("]")
+            self.printQueue()
         
         time.sleep(5)
-        if bathroom.N == (bathroom.maxB-1):
-            bathroom.ocupTime += 5
+        if bathroom.boxes == (bathroom.maxBoxes - 1):
+            bathroom.ocupationTime += 5
 
-        bathroom.N += 1
+        bathroom.boxes += 1
        
         self.releaseStall()
 
-    def genderTurn(self): 
+    def releaseStall(self):
+        global bathroom, waitQueue, mutexGender
+        
+        print("SAÍDA 🏃: Pessoa {} - Gênero {} saindo do box. {} boxes livres.".format(self.personId, genders[self.gender], bathroom.boxes))
+
+        # Se não houver pessoas do mesmo gênero na fila ocorrerá uma troca de gênero
+        if bathroom.boxes == bathroom.maxBoxes:
+            mutexGender.acquire()
+            bathroom.genderBathroom = self.genderChange()
+            if bathroom.genderBathroom != -1:
+                print("Troca de gênero. Novo gênero: {}.".format(genders[bathroom.genderBathroom]))
+            mutexGender.release()
+    
+    def genderChange(self): 
         global waitQueue
         
         if len(waitQueue[0]) == 0 and len(waitQueue[1]) == 0 and len(waitQueue[2]) == 0:
@@ -198,65 +144,99 @@ class Person(threading.Thread):
 
             return times.index(min(times))
 
-    def releaseStall(self):
+    def printQueue(self):
+        queueLenght = len(waitQueue[self.gender])
+        print("Fila Gênero {}: [".format(genders[self.gender]),end="")
+        for i in range(queueLenght):
+            lastIndex = queueLenght - 1
+            if i == lastIndex:
+                print("{}]".format(waitQueue[self.gender][i].personId))
+            else:
+                print("{} ".format(waitQueue[self.gender][i].personId), end="")
 
-        global bathroom, waitQueue, mutexGender
-        
-        print("[SAÍDA] Pessoa {} - Gênero {} saindo do box. {} boxes livres.".format(self.threadID, self.gender, bathroom.N))
-
-        #troca de gêneros, caso não tenha ninguém do mesmo gênero da thread atual na fila
-        if bathroom.N == bathroom.maxB:
-            mutexGender.acquire()
-            bathroom.genRestroom = self.genderTurn()
-            print("Trocou gênero. Novo gênero: {}.".format(bathroom.genRestroom, bathroom.genRestroom-1, bathroom.genRestroom-2))
-            mutexGender.release()
-    
     def run(self):
-        
-        print("[CHEGADA] Pessoa{} - Gênero {} chegou no banheiro.".format(self.threadID, self.gender))
+        print("CHEGADA 🧍: Pessoa {} - Gênero {} chegou ao banheiro.".format(self.personId, genders[self.gender]))
         self.waitTime = time.time()
         self.enterBathroom()
 
+class Bathroom(threading.Thread):
+    def __init__(self, boxes):
+        threading.Thread.__init__(self)
+        self.boxes = boxes
+        self.maxBoxes = boxes
+        self.ocupationTime = 0
+        self.semaphore = threading.Semaphore(boxes)
+        self.genderBathroom = -1
+        self.runtime = 0
+
+    def run(self):
+        global persons
+        
+        self.runtime = time.time()
+        
+        personId = 1
+        threadList = []
+
+        print("{} boxes e {} Pessoas".format(self.boxes, persons))
+
+        for i in range(persons):
+            random.seed()
+            sleepTime = random.randint(2,6)
+
+            thread = Person(personId)
+            threadList.append(thread)
+
+            thread.start()
+            time.sleep(sleepTime)
+            personId += 1
+            
+        for thread in threadList:
+            thread.join()
+
+        self.runtime = time.time() - self.runtime
+
 def init():
-    global bathroom, P
-    N = 0
+    global bathroom, persons
+    boxes = 0
+
     print("#######################")
     print("1 - 1 box e 60 pessoas")
     print("2 - 3 boxes e 180 pessoas")
     print("3 - 5 boxes e 300 pessoas")
-    op = int(input("opção: "))
+    option = int(input("opção: "))
     print("#######################")
-    while (op != 1 and op != 2 and op != 3):
-       print("Invalido!")
-       op = input("opção: ")
+    while (option != 1 and option != 2 and option != 3):
+       print("Opção inválida.")
+       option = int(input("opção: "))
     
-    if op == 1:
-        N = 1
-        P = 60
-    elif op == 2:
-        N = 3
-        P = 180 
-    elif op == 3: 
-        N = 5 
-        P = 300
+    if option == 1:
+        boxes = 1
+        persons = 60
+    elif option == 2:
+        boxes = 3
+        persons = 180 
+    elif option == 3: 
+        boxes = 5 
+        persons = 300
 
-    bathroom = Bathroom(N)
+
+    bathroom = Bathroom(boxes)
     bathroom.start()
     bathroom.join()
 
-    print("\n\n")
+    print("\n")
         
 def main():
-    
-    global bathroom, counterWait, P
+    global bathroom, counterWaitTime, persons
 
     init()
     
-    print("\n\n############")
-    print("Tempo de execução: {}min {:.2f}s".format(int(bathroom.tempoExec/60),bathroom.tempoExec%60))
+    print("Tempo de execução: {}min {:.2f}s".format(int(bathroom.runtime/60),bathroom.runtime%60))
+
     for i in range(3):
-        print("Pessoas do Gênero {}: {}. Tempo médio de espera: {}min{:.2f}s".format(i,counterGen[i],int((counterWait[i]/counterGen[i])/60), (counterWait[i]/counterGen[i])%60))
-    print("Taxa de Ocupação: {:.2f}%.".format(bathroom.ocupTime*100/bathroom.tempoExec))
+        print("Quantidade de pessoas do gênero {}: {} ➡️ Tempo médio de espera: {}min {:.2f}s".format(genders[i],counterGender[i],int((counterWaitTime[i]/counterGender[i])/60), (counterWaitTime[i]/counterGender[i])%60))
+
+    print("Taxa de Ocupação: {:.2f}%.".format(bathroom.ocupationTime*100/bathroom.runtime))
 
 if __name__ == "__main__":
     main()
