@@ -27,6 +27,19 @@ class Person(threading.Thread):
             gender = random.randint(0,2)
         counterGender[gender] += 1
         return gender
+
+    def tests(self):
+        global bathroom, waitQueue, mutexGender
+            
+        if bathroom.boxes > 0 and bathroom.genderBathroom == self.gender:
+            return True
+
+        if len(waitQueue[self.gender]) > 0: 
+            if self not in waitQueue[self.gender]:
+                waitQueue[self.gender].append(self)
+                return False
+            elif bathroom.boxes > 0 and bathroom.genderBathroom == self.gender and waitQueue[self.gender].index(self) < bathroom.boxes:
+                return True
     
     def enterBathroom(self):
         global bathroom, waitQueue, mutexGender
@@ -52,6 +65,9 @@ class Person(threading.Thread):
                 self.printQueue()
         
         with bathroom.semaphore:
+            while(not self.tests()):
+                time.sleep(random.random())
+                
             self.getStall() 
 
     def getStall(self):
