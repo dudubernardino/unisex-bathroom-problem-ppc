@@ -215,15 +215,15 @@ def init():
     global bathroom, persons
     boxes = 0
 
-    print("#######################")
-    print("1 - 1 box e 60 pessoas")
-    print("2 - 3 boxes e 180 pessoas")
-    print("3 - 5 boxes e 300 pessoas")
-    option = int(input("opção: "))
-    print("#######################")
+    print("1️⃣  - 1 box e 60 pessoas")
+    print("2️⃣  - 3 boxes e 180 pessoas")
+    print("3️⃣  - 5 boxes e 300 pessoas")
+    option = int(input("escolha uma das opção acima: "))
     while (option != 1 and option != 2 and option != 3):
        print("Opção inválida.")
-       option = int(input("opção: "))
+       option = int(input("escolha uma nova opção: "))
+    
+    print("#######################")
     
     if option == 1:
         boxes = 1
